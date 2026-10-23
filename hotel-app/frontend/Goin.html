@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Goin Hotel</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            width: 400px;
+        }
+
+        h1,
+        h2 {
+            color: #333;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+
+        button {
+            width: 100%;
+            margin-top: 10px;
+            padding: 10px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #2e79d4;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        li {
+            background: #f8f9fa;
+            padding: 10px;
+            margin-top: 8px;
+            border-radius: 5px;
+            border-left: 4px solid #007bff;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Experience Luxury</h1>
+        <h2>Goin Hotel</h2>
+        <p style="text-align: center; color: #ac8f63;">Book your stay with us!</p>
+
+        <!-- Booking Form -->
+        <div class="form-group">
+            <label>Full Name:</label>
+            <input type="text" id="guestName" placeholder="e.g., John Doe">
+        </div>
+
+        <div class="form-group">
+            <label>Phone Number:</label>
+            <input type="text" id="phoneNumber" placeholder="e.g., +251 911...">
+        </div>
+
+        <div class="form-group">
+            <label>Room Type:</label>
+            <select id="roomType">
+                <option value="Single Room">Single Room ($50/night)</option>
+                <option value="Double Room">Double Room ($80/night)</option>
+                <option value="Deluxe Suite">Deluxe Suite ($150/night)</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Check-in Date:</label>
+            <input type="date" id="checkIn">
+        </div>
+
+        <div class="form-group">
+            <label>Check-out Date:</label>
+            <input type="date" id="checkOut">
+        </div>
+
+        <button onclick="makeBooking()">Book Room Now</button>
+
+        <h2>Current Bookings</h2>
+        <ul id="bookingList">
+            <!-- Bookings will show up here dynamically -->
+        </ul>
+    </div>
+
+    <script>
+        const API_URL = window.location.origin;
+
+        // Function to fetch and display bookings from the backend database
+        async function loadBookings() {
+            try {
+                const response = await fetch(`${API_URL}/bookings`);
+                const bookings = await response.json();
+                const list = document.getElementById("bookingList");
+                list.innerHTML = "";
+
+                if (bookings.length === 0) {
+                    list.innerHTML = "<li style='text-align:center; color:#888;'>No bookings yet.</li>";
+                    return;
+                }
+
+                bookings.forEach(b => {
+                    const li = document.createElement("li");
+                    li.innerHTML = `
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <strong>${b.guest_name}</strong> (${b.phone_number})<br>
+                                <em>${b.room_type}</em><br>
+                                <small>${b.check_in} to ${b.check_out}</small>
+                            </div>
+                            <button onclick="deleteBooking(${b.id})" style="background: #dc3545; width: auto; padding: 5px 10px; font-size: 12px; margin: 0;">Cancel</button>
+                        </div>
+                    `;
+                    list.appendChild(li);
+                });
+            } catch (error) {
+                console.error("Error loading bookings:", error);
+            }
+        }
+
+        // Function to send a new booking to the backend
+        async function makeBooking() {
+            const guestName = document.getElementById("guestName").value;
+            const phoneNumber = document.getElementById("phoneNumber").value;
+            const roomType = document.getElementById("roomType").value;
+            const checkIn = document.getElementById("checkIn").value;
+            const checkOut = document.getElementById("checkOut").value;
+
+            if (!guestName || !phoneNumber || !checkIn || !checkOut) {
+                alert("Please fill in all fields!");
+                return;
+            }
+
+            const response = await fetch(`${API_URL}/bookings?guest_name=${encodeURIComponent(guestName)}&room_type=${encodeURIComponent(roomType)}&check_in=${checkIn}&check_out=${checkOut}&phone_number=${encodeURIComponent(phoneNumber)}`, {
+                method: "POST"
+            });
+
+            if (response.ok) {
+                alert("booking successfully!"); // Exact required success message
+                document.getElementById("guestName").value = "";
+                document.getElementById("phoneNumber").value = "";
+                document.getElementById("checkIn").value = "";
+                document.getElementById("checkOut").value = "";
+                loadBookings();
+            } else {
+                alert("Booking failed. Try again.");
+            }
+        }
+
+        // Function to handle deleting a booking
+        async function deleteBooking(id) {
+            if (confirm("Are you sure you want to cancel this booking?")) {
+                const response = await fetch(`${API_URL}/bookings/${id}`, {
+                    method: "DELETE"
+                });
+                if (response.ok) {
+                    alert("delete successfully!"); // Exact required delete message
+                    loadBookings();
+                } else {
+                    alert("Failed to delete booking.");
+                }
+            }
+        }
+
+        // Load bookings when the webpage opens
+        loadBookings();
+    </script>
+</body>
+
+</html>
